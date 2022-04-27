@@ -20,15 +20,40 @@ namespace Maypaper.Services.Concrete
         }
 
 
-
-        public Task<IResult> Add(ArticleAddDto articleAddDto, string createdByName)
+        // ADD ARTICLE
+        public async Task<IResult> Add(ArticleAddDto articleAddDto, string createdByName)
         {
-            throw new NotImplementedException();
+            await _unitOfWork.Articles.AddAsync(new Article
+            {
+                Title = articleAddDto.Title,
+                Content = articleAddDto.Content,
+                Note = articleAddDto.Note,
+                IsActive = articleAddDto.IsActive,
+                CreatedByName = createdByName,
+                CreatedDate = DateTime.Now,
+                ModifiedByName = createdByName,
+                ModifiedDate = DateTime.Now,
+                IsDeleted = false
+
+            });
+            await _unitOfWork.SaveAsync();
+            return new Result(ResultStatus.Success, $"{articleAddDto.Title} Başarıyla Eklenmiştir");
         }
 
-        public Task<IResult> Delete(int articleId, string modifiedByName)
+        // SET ACTIVATE FALSE ARTICLE
+        public async Task<IResult> Delete(int articleId, string modifiedByName)
         {
-            throw new NotImplementedException();
+            var articleToDelete = await _unitOfWork.Articles.GetAsync(a => a.Id == articleId);
+            if (articleToDelete!=null)
+            {
+                articleToDelete.IsDeleted = true;
+                articleToDelete.ModifiedByName = modifiedByName;
+                articleToDelete.ModifiedDate = DateTime.Now;
+                await _unitOfWork.Articles.UpdateAsync(articleToDelete);
+                await _unitOfWork.SaveAsync();
+                return new Result(ResultStatus.Success, $"{articleToDelete.Title} Başarıyla Silindi!");
+            }
+            return new Result(ResultStatus.Error, "Bir Hata Oluştu!");
         }
 
         // GET ARTICLE
@@ -53,7 +78,7 @@ namespace Maypaper.Services.Concrete
             return new DataResult<IList<Article>>(ResultStatus.Error, "Bir Hata Oluştu!", null);
         }
 
-        // GET ALL ARTICLES NON DELETED
+        // GET ALL ARTICLES WHICH DELETED
         public async Task<IDataResult<IList<Article>>> GetAllByNonDeleted()
         {
             var articleList = await _unitOfWork.Articles.GetAllAsync(null, a=>a.Questions ,a => a.IsDeleted == false);
@@ -64,14 +89,38 @@ namespace Maypaper.Services.Concrete
             return new DataResult<IList<Article>>(ResultStatus.Error, "Bir Hata Oluştu!", articleList);
         }
 
-        public Task<IResult> HardDelete(int articleId)
+        // DELETE ARTICLE FROM DATABASE
+        public async Task<IResult> HardDelete(int articleId)
         {
-            throw new NotImplementedException();
+            
+            var articleToHardDelete = await _unitOfWork.Articles.GetAsync(a => a.Id == articleId);
+            if (articleToHardDelete !=null)
+            {
+                await _unitOfWork.Articles.DeleteAsync(articleToHardDelete);
+                await _unitOfWork.SaveAsync();
+                return new Result(ResultStatus.Success, $"{articleToHardDelete.Title} Başarıyla Veritabanından Silindi!");
+            }
+            return new Result(ResultStatus.Error, "Bir Hata Oluştu!");
         }
 
-        public Task<IResult> Update(ArticleUpdateDto articleUpdateDto, string modifiedByName)
+        //UPDATE ARTICLE
+        public async Task<IResult> Update(ArticleUpdateDto articleUpdateDto, string modifiedByName)
         {
-            throw new NotImplementedException();
+            var articleUpdate = await _unitOfWork.Articles.GetAsync(a => a.Id == articleUpdateDto.ArticleId);
+            if (articleUpdate !=null)
+            {
+                articleUpdate.Title = articleUpdateDto.Title;
+                articleUpdate.Content = articleUpdateDto.Content;
+                articleUpdate.IsActive = articleUpdateDto.IsActive;
+                articleUpdate.IsDeleted = articleUpdateDto.IsDeleted;
+                articleUpdate.Note = articleUpdateDto.Note;
+                articleUpdate.ModifiedByName = modifiedByName;
+                articleUpdate.ModifiedDate = DateTime.Now;
+                await _unitOfWork.Articles.UpdateAsync(articleUpdate);
+                await _unitOfWork.SaveAsync();
+                return new Result(ResultStatus.Success, $"{articleUpdateDto.Title} Başarıyla Güncellendi!");
+            }
+            return new Result(ResultStatus.Error, "Bir Hata Oluştu!");
         }
     }
 }
