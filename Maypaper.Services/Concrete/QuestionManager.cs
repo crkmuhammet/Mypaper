@@ -24,9 +24,30 @@ namespace Maypaper.Services.Concrete
             throw new NotImplementedException();
         }
 
-        public Task<IResult> Delete(int questionId, string modifiedByName)
+        public async Task<IResult> Delete(int questionId, string modifiedByName)
         {
-            throw new NotImplementedException();
+            //Delete işlemi için öncelikle silmek istediğimiz veriyi getiriyoruz.
+            //Bu Fonksiyon için Question
+            var question = await _unitOfWork.Questions.GetAsync(q => q.Id == questionId);
+            //Gelen değerin boş olup olmadığını kontrol ediyoruz.
+            if (question !=null)
+            {
+                question.IsDeleted = true;
+                question.ModifiedByName = modifiedByName;
+                question.ModifiedDate = DateTime.Now;
+
+                // Alanları güncelledikten sonra Update işlemi yapmamız gerekiyor.
+                await _unitOfWork.Questions.UpdateAsync(question);
+                // Update işleminden sonra update edilen datayı kayıt etmemiz gerekiyor.
+                await _unitOfWork.SaveAsync();
+                // İşlemler başarılıysa bilgi Başarılı mesajı döndüreceğiz.
+                return new Result(ResultStatus.Success, $"{question.Content} Başarıyla Silindi!");
+            }
+            // İşlemler başarısız ise Başarısız mesajı döndüreceğiz.
+            else
+            {
+                return new Result(ResultStatus.Error, "Bir Hata Oluştu!");
+            }
         }
 
         // GET QUESTION
