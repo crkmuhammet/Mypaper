@@ -19,9 +19,24 @@ namespace Maypaper.Services.Concrete
             _unitOfWork = unitOfWork;
         }
 
-        public Task<IResult> Add(QuestionAddDto questionAddDto, string createdByName)
+        public async Task<IResult> Add(QuestionAddDto questionAddDto, string createdByName)
         {
-            throw new NotImplementedException();
+            // Kategori oluştururken burada gönderdiğimiz anda yeni bir kategori oluşturmamız gerekiyor.
+            // DTO içindeki alanlar ile Category Entity içindeki alanları birbirine eşliyoruz.
+            // DTO içinde olmayan alanları ise kendimiz veriyoruz.
+            await _unitOfWork.Questions.AddAsync(new Question
+            {
+                Title = questionAddDto.Title,
+                Content = questionAddDto.Content,
+                IsActive = questionAddDto.IsActive,
+                CreatedByName = createdByName,
+                CreatedDate = DateTime.Now,
+                ModifiedByName = createdByName,
+                ModifiedDate = DateTime.Now,
+                IsDeleted=false
+            });
+            await _unitOfWork.SaveAsync();
+            return new Result(ResultStatus.Success, $"{questionAddDto.Title} Başarıyla Oluşturuldu!");
         }
 
         public async Task<IResult> Delete(int questionId, string modifiedByName)
